@@ -57,6 +57,7 @@ public class Controller {
                         Athlete newAthlete = view.athleteForm(sports);
                         athleteDAO.add(newAthlete);
                     }
+                    break;
                 }
                 case 3: {
                     // Search athlete by name
