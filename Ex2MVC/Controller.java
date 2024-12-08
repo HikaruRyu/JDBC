@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Scanner;
 
 public class Controller {
 
@@ -13,7 +14,6 @@ public class Controller {
 
     private static Connection connection;
 
-    // Static block for initializing the connection
     static {
         try {
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
@@ -22,59 +22,79 @@ public class Controller {
         }
     }
 
-    // Method to return the connection
     public static Connection getConnection() {
         return connection;
     }
 
+    public static void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+                System.out.println("Conexión cerrada.");
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
 
         // Initialize view and DAOs
         MainView view = new MainView();
         SportDAO sportDAO = new SportDAO();
         AthleteDAO athleteDAO = new AthleteDAO();
 
-        // Variable for storing user option
-        int option;
+        int option = -1; 
 
         do {
-            // Show the menu and get user input
-            option = view.showMenu();
-            
-            switch (option) {
-                case 1: {
-                    // Add new sport
-                    Sport newSport = view.sportForm();
-                    sportDAO.add(newSport);
-                    break;
-                }
-                case 2: {
-                    // Add new athlete
-                    List<Sport> sports = sportDAO.getAll();
-                    if (sports.isEmpty()) {
-                        System.out.println("No hay deportes disponibles. Por favor, añada un deporte primero.");
-                    } else {
-                        Athlete newAthlete = view.athleteForm(sports);
-                        athleteDAO.add(newAthlete);
+            try {
+                option = view.showMenu();
+
+                switch (option) {
+                    case 1: {
+                        Sport newSport = view.sportForm();
+                        sportDAO.add(newSport);
+                        break;
                     }
-                    break;
+                    case 2: {
+                        List<Sport> sports = sportDAO.getAll();
+                        if (sports.isEmpty()) {
+                            System.out.println("No hay deportes disponibles. Por favor, añada un deporte primero.");
+                        } else {
+                            Athlete newAthlete = view.athleteForm(sports);
+                            athleteDAO.add(newAthlete);
+                        }
+                        break;
+                    }
+                    case 3: {
+                        String name = view.askForAthleteName();
+                        List<Athlete> athletes = athleteDAO.findByName(name);
+                        view.athleteList(athletes);
+                        break;
+                    }
+                    case 4: {
+                        List<Sport> sports = sportDAO.getAll();
+                        int sportId = view.askSport(sports);
+                        List<Athlete> athletes = athleteDAO.findBySportId(sportId);
+                        view.athleteList(athletes);
+                        break;
+                    }
+                    case 0: {
+                        System.out.println("Saliendo del programa...");
+                        break;
+                    }
+                    default: {
+                        System.err.println("Por favor, introduce un número válido (0-4).");
+                    }
                 }
-                case 3: {
-                    // Search athlete by name
-                    String name = view.askForAthleteName();
-                    List<Athlete> athletes = athleteDAO.findByName(name);
-                    view.athleteList(athletes);
-                    break;
-                }
-                case 4: {
-                    // List athletes by sport
-                    List<Sport> sports = sportDAO.getAll();
-                    int sportId = view.askSport(sports);
-                    List<Athlete> athletes = athleteDAO.findBySportId(sportId);
-                    view.athleteList(athletes);
-                    break;
-                }
+            } catch (Exception e) {
+                System.err.println("Entrada inválida. Por favor, introduce un número válido.");
+                scanner.nextLine();
             }
-        } while (option != 0); // Loop until user chooses to exit
+        } while (option != 0);
+
+        scanner.close();
+        closeConnection();
     }
 }
